@@ -50,6 +50,8 @@ streamlit run dashboard.py --server.headless true
 
 浏览器打开 <http://localhost:8501>。
 
+> **Linux 用户注意**：面板本身可以在无图形界面的服务器上运行，但"视觉工作台"和桌面键鼠类工具依赖图形界面（`pyautogui`）。没有显示环境时这些功能不可用，其余功能不受影响。需要完整桌面能力请在带显示器的桌面环境下使用。
+
 命令行跑一次 ReAct：
 
 ```bash

@@ -4,7 +4,12 @@
 ⚠️ 旧版队列在内存（重启清空），现改为 sqlite 持久队列（重启不丢、超时自动拒绝）
 兼容：GLOBAL_QUEUE 保留为内存视图，供 dashboard 读取
 """
-import pyautogui
+try:
+    import pyautogui
+except Exception:
+    # Linux 无图形环境（没有 DISPLAY）时导入即失败。降级为 None，
+    # 保证 main / dashboard 能正常启动，只有真要点鼠标时才报错。
+    pyautogui = None
 import uuid
 from core.vision_acl_mgr import vision_acl_mgr
 from core.screen_capture import scale_pos
@@ -74,6 +79,8 @@ def execute_approved(aid: str, sid: str):
         return f"该项状态为 {item['status']}，不可执行"
     t = item["action_type"]
     p = item["payload"] or {}
+    if pyautogui is None and t in ("type_text", "click", "scroll", "hotkey"):
+        return "❌ 当前环境没有可用的图形界面，键鼠类操作无法执行（需要 Windows 桌面或带显示器的 Linux）"
     try:
         if t == "open_file":
             import os
