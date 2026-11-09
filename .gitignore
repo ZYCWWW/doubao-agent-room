@@ -93,3 +93,5 @@ docs/PANEL_TODO.md
 docs/PAIRING.md
 # 内部开源清单（发布计划、红线、谁按按钮），不是对外文档
 docs/OPEN_SOURCE.md
+# 桌面快捷方式图标（二进制），公开版不带
+assets/panel.ico
