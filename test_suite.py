@@ -1280,11 +1280,26 @@ class TestConfigSavePreserve(unittest.TestCase):
         from core.config_loader import CONFIG_PATH
         import tomllib
         self._cfg_path = CONFIG_PATH
+        # 公开仓库不带 config.toml（含本机路径），测试需自备一份含未托管段的最小配置
+        self._created = not CONFIG_PATH.exists()
+        if self._created:
+            CONFIG_PATH.parent.mkdir(parents=True, exist_ok=True)
+            CONFIG_PATH.write_text(
+                "[session]\nmax_turns = 20\n\n[idle]\nenabled = false\n",
+                encoding="utf-8",
+            )
         self._orig = CONFIG_PATH.read_text(encoding="utf-8")
         self._before = tomllib.loads(self._orig)
 
     def tearDown(self):
-        self._cfg_path.write_text(self._orig, encoding="utf-8")
+        if getattr(self, "_created", False):
+            # 删掉本测试自己造的临时配置，保持工作区干净
+            try:
+                self._cfg_path.unlink()
+            except FileNotFoundError:
+                pass
+        else:
+            self._cfg_path.write_text(self._orig, encoding="utf-8")
 
     def test_extra_sections_preserved(self):
         import tomllib
