@@ -1,0 +1,16 @@
+{
+  "name": "debate_plugin",
+  "version": "1.0.0",
+  "desc": "辩论现场：四角色辩论的发起 / 逐轮发言 / 共识提取 / 会话列表，自带一页面板",
+  "author": "agent_project",
+  "panel": {
+    "label": "🗣️ 辩论现场",
+    "order": 80
+  },
+  "config": {
+    "section": "debate",
+    "defaults": {
+      "enabled": true
+    }
+  }
+}

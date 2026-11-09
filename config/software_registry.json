@@ -1,0 +1,25 @@
+{
+  "items": [
+    {
+      "name": "记事本",
+      "target": "notepad.exe",
+      "args": "",
+      "title_hint": "记事本",
+      "cls_hint": "Notepad"
+    },
+    {
+      "name": "画图",
+      "target": "shell:AppsFolder\\Microsoft.Paint_8wekyb3d8bbwe!App",
+      "args": "",
+      "title_hint": "画图",
+      "cls_hint": ""
+    },
+    {
+      "name": "计算器",
+      "target": "apps\\calculator.py",
+      "args": "",
+      "title_hint": "计算器·内置",
+      "cls_hint": "AgentCalcWnd"
+    }
+  ]
+}

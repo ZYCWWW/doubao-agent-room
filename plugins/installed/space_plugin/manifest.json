@@ -1,0 +1,16 @@
+{
+  "name": "space_plugin",
+  "version": "1.0.0",
+  "desc": "想象沙盘：Mermaid 绘图 / 沙盘文件列表与读取 / 节点与快照浏览，自带一页面板",
+  "author": "agent_project",
+  "panel": {
+    "label": "📝 想象沙盘",
+    "order": 60
+  },
+  "config": {
+    "section": "space",
+    "defaults": {
+      "enabled": true
+    }
+  }
+}

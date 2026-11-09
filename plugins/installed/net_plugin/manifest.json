@@ -1,0 +1,16 @@
+{
+  "name": "net_plugin",
+  "version": "1.0.0",
+  "desc": "联网：必应检索（标题+摘要+域名）与网页正文抓取，自带一页面板（检索记录 / 抓取预览）",
+  "author": "agent_project",
+  "panel": {
+    "label": "🌐 联网",
+    "order": 70
+  },
+  "config": {
+    "section": "net",
+    "defaults": {
+      "enabled": true
+    }
+  }
+}

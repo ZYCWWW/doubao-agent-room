@@ -1,0 +1,66 @@
+{
+  "_说明": "坑卡片。trigger 是关键词（小写即可，匹配时不区分大小写），命中越多排越前；priority 同分时用；card 一句话说清「坑 + 正确做法」，不写故事。加卡片只改这个文件，不改代码。",
+  "_来源": "项目实践积累 + docs\\ARCHITECTURE_MASTER.md 坑表",
+  "cards": [
+    {
+      "id": "ad_ascii_insert_pos",
+      "priority": 9,
+      "trigger": ["altium", "ad24", "schdoc", "pcbdoc", "原理图"],
+      "card": "往 SchDoc 加图元只能插在 |RECORD=31| 之后、任何 |RECORD=6| 之前；追加到末尾会被 AD 静默丢弃。"
+    },
+    {
+      "id": "ad_percent_format",
+      "priority": 9,
+      "trigger": ["ownerindex", "designator", "%%comp%%"],
+      "card": "别用 %%X%% 占位（会被 % 格式化吃掉一层，永远替换命中不了）；改用 #C#、#P#。OWNERINDEX = 父记录行号 - 2。"
+    },
+    {
+      "id": "ad_point_unit",
+      "priority": 8,
+      "trigger": ["point(", "mil", "坐标"],
+      "card": "Point(x,y) 单位是 1/100000 mil，1 mil = Point(100000,100000)；写 Point(100,100) 全挤在原点附近。COLOR 是 BGR。"
+    },
+    {
+      "id": "ad_embed_stage",
+      "priority": 7,
+      "trigger": ["嵌入", "setparent", "舞台"],
+      "card": "别把 AD 或系统计算器拖进舞台：AD 有 89 个顶层窗口、尺寸超过舞台；UWP 由 ApplicationFrameHost 托管，SetParent 必被拒。"
+    },
+    {
+      "id": "tkinter_setparent",
+      "priority": 7,
+      "trigger": ["tkinter", "跨进程"],
+      "card": "tkinter 顶层窗口被跨进程 SetParent 后进程直接退出、舞台全黑；要嵌就写原生 Win32 窗口（apps\\calculator.py 是样板）。"
+    },
+    {
+      "id": "ollama_thinking",
+      "priority": 8,
+      "trigger": ["不回话", "content 空", "thinking", "qwen3.5"],
+      "card": "思考型模型正文在 message.thinking，content 是空串；请求要带 think=false，content 空就回退 thinking。"
+    },
+    {
+      "id": "vram_8g",
+      "priority": 8,
+      "trigger": ["显存", "read timed out", "ollama ps", "8g"],
+      "card": "8 GB 显存装不下三个模型同时驻留（3.6+3.9+5.4≈12.9G）；遇到 Read timed out 先 ollama ps，只留一个。"
+    },
+    {
+      "id": "chat_md_cap",
+      "priority": 5,
+      "trigger": ["chat.md", "训练数据", "demos_batch"],
+      "card": "chat.md 有 2000 行上限、超了裁最老的；训练数据源是 training\\demos_batch*.json 与 chat_space\\archive\\，不要只从 chat.md 抽。"
+    },
+    {
+      "id": "commit_bom",
+      "priority": 4,
+      "trigger": ["提交信息", "commit -f", "bom"],
+      "card": "用文件喂 git 提交信息时 UTF-8 BOM 会变成标题首字符（日志里看不见）；用 -m，或写无 BOM 的文本再喂。"
+    },
+    {
+      "id": "powershell_python_inline",
+      "priority": 4,
+      "trigger": ["python -c", "stdout"],
+      "card": "本机 PowerShell 里内联多行 python -c 的 stdout 会丢（退出码 0、输出空）；写成 .py 文件再跑，或把结果落盘再读。"
+    }
+  ]
+}

@@ -1,0 +1,74 @@
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+agent_memory_db/
+logs/
+config/*.bak
+.env
+.venv/
+venv/
+config/secrets.toml
+
+# --- 以下为 2026-11-06 接入 git 时补充 ---
+# 运行时数据与日志：体积会涨、每写一次就变，不进库
+cache/
+.backup/
+*.tmp
+.tmp_*
+*.log
+sandbox/.locks/
+sandbox/*.db
+sandbox/*/*.db
+sandbox/chat_space/chat.md
+sandbox/chat_space/chat_backup_*.md
+sandbox/chat_space/archive/
+sandbox/chat_space/long_chat.json
+sandbox/chat_space/chat_summary.json
+sandbox/chat_space/teacher_pending.json
+sandbox/chat_space/teacher_review.json
+sandbox/chat_space/panel_*.log
+
+# 猜想库已于 2026-11-08 整块移除，历史数据移到 _archive/hypothesis_removed_20261108/
+# （原规则 sandbox/hypothesis/ 保留一行以防未来同名目录）
+sandbox/hypothesis/
+
+# 求证结论的待沉淀队列：运行时自动追加，每跑一次就变，不进库（同 teacher_pending）
+sandbox/knowledge_pending.json
+
+# 训练生成物（可由 prepare_data.py 重跑）
+training/data/
+
+# sandbox 不再整体排除：题目、章程、教师笔记、角色卡、书库索引这些文本要留档
+# （上面已逐项排除其中的运行时数据）
+
+# 求证流水线的早期路径 bug 产物（2026-11-06 已修 RESEARCH_ROOT，产物改落根 sandbox/research）
+# 备份见 .backup/20261106b/core_sandbox_research.zip
+core/sandbox/
+
+# 求证流水线的运行产物（每个课题一个目录，测试也会生成，不进库）
+sandbox/research/
+
+# --- 2026-11-06 白板实验 ---
+# 沙盘已整体清空（用户要求"化为白板"），原先留档的题目/章程/教师笔记/角色卡
+# 一并移出版本库；全部内容备份在 .backup/sandbox_20261106/sandbox_all.zip
+# 此后 sandbox 整体视为运行时数据，不再入库
+sandbox/
+
+# --- 2026-11-08 开源准备（见 docs/OPEN_SOURCE.md）---
+# AD 探针脚本是本地实验物，不进库；要留档时移到 tools/altium/ 或 sandbox/scratch/
+tmp_*.py
+# 他的私人笔记，永不进公开仓库
+obsidian_vault/
+
+# --- 2026-11-08 家的记录：私人内容，按 OPEN_SOURCE.md 红线永不进公开仓库 ---
+docs/豆包/
+docs/conversations/
+# 给"下一次回来的我"的交接页：含私人读档路径与个人描述，不进公开仓库
+docs/MEMORY.md
+# 本机实际配置（含本机绝对路径），公开仓库只带 config.example.toml
+config/config.toml
+# 封存的独立实验（PCB/AD 等），不进公开仓库
+archive/
+# 拆除功能的归档（2026-11-08 猜想库 106 个历史文件 + 被否提案），不进库
+_archive/

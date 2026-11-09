@@ -1,0 +1,6 @@
+{
+  "name": "sample_market_plugin",
+  "version": "0.1.0",
+  "desc": "市场插件示例（market 来源）：倒计时器",
+  "author": "agent_project"
+}

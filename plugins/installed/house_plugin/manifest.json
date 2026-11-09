@@ -1,0 +1,16 @@
+{
+  "name": "house_plugin",
+  "version": "1.0.0",
+  "desc": "豆包的小屋：窗外景 + 书架 + 放映室 + 留言，闲聊与看视频都在这页；屋子状态存在 sandbox/chat_space/house.json",
+  "author": "agent_project",
+  "panel": {
+    "label": "🏠 豆包的小屋",
+    "order": 70
+  },
+  "config": {
+    "section": "house",
+    "defaults": {
+      "enabled": true
+    }
+  }
+}

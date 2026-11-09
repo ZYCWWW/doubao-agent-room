@@ -1,0 +1,16 @@
+{
+  "name": "research_plugin",
+  "version": "1.0.0",
+  "desc": "科研七步流水线：课题创建 / 逐步执行 / 进度查看，自带一页面板",
+  "author": "agent_project",
+  "panel": {
+    "label": "🔬 科研七步",
+    "order": 40
+  },
+  "config": {
+    "section": "research",
+    "defaults": {
+      "enabled": true
+    }
+  }
+}

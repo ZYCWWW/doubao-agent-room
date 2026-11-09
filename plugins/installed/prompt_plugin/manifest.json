@@ -1,0 +1,16 @@
+{
+  "name": "prompt_plugin",
+  "version": "1.0.0",
+  "desc": "提示词工程助手：优化 / 对比 / 模板 / 提交，自带一页面板",
+  "author": "agent_project",
+  "panel": {
+    "label": "✍️ 提示词助手",
+    "order": 30
+  },
+  "config": {
+    "section": "prompt",
+    "defaults": {
+      "enabled": true
+    }
+  }
+}

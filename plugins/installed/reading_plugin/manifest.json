@@ -1,0 +1,16 @@
+{
+  "name": "reading_plugin",
+  "version": "1.0.0",
+  "desc": "阅读能力：书库检索 / 读书（txt、PDF、扫描版 OCR）/ 白名单内目录扫描，自带一页面板",
+  "author": "agent_project",
+  "panel": {
+    "label": "📖 阅读",
+    "order": 50
+  },
+  "config": {
+    "section": "reading",
+    "defaults": {
+      "enabled": true
+    }
+  }
+}

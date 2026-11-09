@@ -1,0 +1,15 @@
+{
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": {
+        "source.fixAll": "explicit"
+    },
+    // 保存时自动把全角空格替换成半角空格
+    "files.associations": {
+        "*.py": "python"
+    },
+    "editor.rulers": [
+        88
+    ],
+    "unicodeHighlight.ambiguousCharacters": true,
+    "unicodeHighlight.invisibleCharacters": true
+}

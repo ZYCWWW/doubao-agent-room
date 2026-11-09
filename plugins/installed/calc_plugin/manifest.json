@@ -1,0 +1,6 @@
+{
+  "name": "calc_plugin",
+  "version": "0.1.0",
+  "desc": "数学计算插件：安全表达式求值（calculator）",
+  "author": "agent_project"
+}

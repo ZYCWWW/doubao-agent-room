@@ -1,0 +1,8 @@
+{
+  "name": "mode_plugin",
+  "version": "1.0.0",
+  "desc": "运行模式：steady / inquiry 双策略的查看与手动指定，自带一页面板",
+  "author": "agent_project",
+  "panel": {"label": "📊 运行模式", "order": 100},
+  "config": {"section": "mode", "defaults": {"enabled": true}}
+}

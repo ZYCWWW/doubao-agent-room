@@ -1,0 +1,70 @@
+# ==============================
+# 示例配置：复制为 config/config.toml 后按自己机器修改
+#   copy config\config.example.toml config\config.toml      (Windows)
+#   cp config/config.example.toml config/config.toml        (Linux/macOS)
+# 👉 路径都能在面板「地址管理器」可视化修改
+# ⚠️ 修改路径后必须重启程序才生效，原有数据不会自动迁移
+# ==============================
+
+[ollama]
+chat_url = "http://localhost:11434/api/chat"
+chat_model = "deepseekR1Q7B:latest"     # 换成你 ollama list 里的模型名
+vision_model = "qwen3.5:4b"
+timeout = 120
+vision_timeout = 300
+max_concurrent = 2
+
+# 外部模型（任意 OpenAI 兼容服务）。密钥不要写在这里：
+# 优先环境变量 DEEPSEEK_API_KEY，其次 config/secrets.toml（已 gitignore）。
+[external_llm]
+enabled = false                # 没配密钥就保持 false
+base_url = "https://api.deepseek.com"
+api_key = ""
+model = "deepseek-chat"
+role_name = "云端DeepSeek"
+timeout = 120
+
+[models]
+main = "deepseekR1Q7B:latest"
+light = "llama3.1:8b"
+vision = "qwen3.5:4b"
+
+[memory]
+short_max_token = 3000
+summary_max_token = 2000
+compress_target_len = 120
+summary_merge_len = 300
+score_threshold_save = 6.0
+score_threshold_archive = 2.0
+score_decay_rate = 0.02
+
+# 以下路径留空即使用项目目录内的默认位置（sandbox/、agent_memory_db/、logs/、books/）
+[sandbox]
+root_path = ""
+keep_days = 14
+
+[kb]
+persist_path = ""
+
+[log]
+log_path = ""
+
+# 书库：你自己的电子书目录（pdf/txt）
+[library]
+path = ""
+
+# 外部资料库：本地教材/手册/标准 PDF 的目录，只做元数据索引 + 按需抽页
+[external_kb]
+path = ""
+enabled = false
+max_hits = 2
+max_chars = 400
+
+[dpi]
+enable_dpi_fix = true
+
+[vision_acl]
+max_scan_depth = 2
+
+[session]
+idle_timeout = 1800

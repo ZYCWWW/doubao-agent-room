@@ -1,0 +1,16 @@
+{
+  "name": "knowledge_plugin",
+  "version": "1.0.0",
+  "desc": "知识库：四集合检索 / 逐条编辑删除 / 待仲裁队列处理，自带一页面板（无工具导出）",
+  "author": "agent_project",
+  "panel": {
+    "label": "📚 知识库",
+    "order": 90
+  },
+  "config": {
+    "section": "knowledge",
+    "defaults": {
+      "enabled": true
+    }
+  }
+}

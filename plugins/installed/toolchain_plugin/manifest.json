@@ -1,0 +1,7 @@
+{
+  "name": "toolchain_plugin",
+  "version": "1.0.0",
+  "desc": "工具链宏：一键执行预设工具序列（web_research / software_learn），无面板",
+  "author": "agent_project",
+  "config": {"section": "toolchain", "defaults": {"enabled": true}}
+}
