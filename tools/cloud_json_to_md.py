@@ -4,7 +4,8 @@ import json
 import os
 import sys
 
-RAW = r"E:\agent_project\docs\conversations\raw"
+RAW = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                   "docs", "conversations", "raw")
 PAGES = os.path.join(RAW, "_pages")
 
 

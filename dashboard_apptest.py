@@ -3,7 +3,7 @@
 面板逐页渲染验收（Streamlit AppTest）。
 
 用法：
-    & "E:\\agent_project\\.venv\\Scripts\\python.exe" dashboard_apptest.py
+    python dashboard_apptest.py
 
 验证内容：
 - dashboard.py 能加载，主页无异常

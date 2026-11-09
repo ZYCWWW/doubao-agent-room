@@ -1,5 +1,5 @@
 # tools/book_tool.py
-"""读书工具：书库 E:\阅读 查询与阅读
+"""读书工具：书库查询与阅读
 - 文字版 PDF / txt：直接抽正文给模型
 - 扫描版 PDF：把前几页渲染成图片，让模型用 vl_analyze_image 读页（不假装读过）
 解析用 PyMuPDF：比 pdfplumber 快 3~6 倍，且不会吐 (cid:xxxx) 乱码。
@@ -145,7 +145,7 @@ def _read_pdf(real: str, b: dict, page=None) -> str:
 
 
 def book_list(query: str = "", session_id: str = ""):
-    """查询老师书库（E:\阅读）书目，可按书名关键词过滤"""
+    """查询老师书库书目，可按书名关键词过滤"""
     idx = load_index()
     hits = idx["books"]
     if query:
@@ -192,6 +192,6 @@ def book_read(name: str, page=None, session_id: str = ""):
 
 
 plugin_export = {
-    "book_list": {"desc": "查询老师书库（E:\\阅读）书目，可按书名关键词过滤", "func": book_list},
+    "book_list": {"desc": "查询老师书库书目，可按书名关键词过滤", "func": book_list},
     "book_read": {"desc": "读取书库中的书，返回正文（txt 直接读，pdf 抽文字层，扫描版转图片，传书名关键词）", "func": book_read},
 }

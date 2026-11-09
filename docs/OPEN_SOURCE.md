@@ -12,11 +12,11 @@
 
 | 类别 | 具体 |
 |---|---|
-| 私人对话 | `docs\conversations\*`、`sandbox\chat_space\chat.md`、`archive\*`、`F:\Doubao memory` 的任何内容 |
-| 本机路径 | `E:\阅读`、`F:\Doubao memory`、`C:\Users\20525\...` 一律改配置项 + 占位默认值 |
+| 私人对话 | `docs\conversations\*`、`sandbox\chat_space\chat.md`、`archive\*`、个人记忆目录的任何内容 |
+| 本机路径 | `<书库目录>`、`<个人记忆目录>`、`C:\Users\<用户名>\...` 一律改配置项 + 占位默认值 |
 | 密钥/账号 | `config\` 里任何 api key、base url、余额截图 |
 | 运行时数据 | `logs\`、`cache\`、`agent_memory_db\`、`.venv\`、`.backup\`、`obsidian_vault\`（他的笔记） |
-| 第三方素材 | AD 截图、Altium 安装包、`E:\阅读` 里的书 |
+| 第三方素材 | AD 截图、Altium 安装包、书库里的书 |
 
 **最关键的一条：现有 git 历史里已经有私人纪要（`docs/conversations`）。所以不能"直接推现在这个仓库"——公开必须建一个干净历史的新仓库。**
 

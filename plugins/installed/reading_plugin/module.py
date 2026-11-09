@@ -124,7 +124,7 @@ def _read_pdf(real: str, b: dict, page=None) -> str:
 # ---------------------------------------------------------------- 三个工具
 
 def book_list(query: str = "", session_id: str = ""):
-    """查询书库（E:\\阅读）书目，可按书名关键词过滤"""
+    """查询书库书目，可按书名关键词过滤"""
     idx = load_index()
     hits = idx.get("books") or []
     if query:
@@ -198,7 +198,7 @@ def scan_folder(path: str, session_id: str = ""):
 
 plugin_export = {
     "book_list": {
-        "desc": "查询书库（E:\\阅读）书目，可按书名关键词过滤",
+        "desc": "查询书库书目，可按书名关键词过滤",
         "func": book_list,
     },
     "book_read": {
@@ -296,7 +296,7 @@ def panel_render():
 
     st.divider()
     st.subheader("🧭 临时扫描其他目录")
-    st.caption("受视觉 ACL 白名单管控，只列文件路径、不读内容。书库（E:\\阅读）不走这里，用上面的找书即可。")
+    st.caption("受视觉 ACL 白名单管控，只列文件路径、不读内容。书库不走这里，用上面的找书即可。")
     try:
         _wl = vision_acl_mgr.cfg.get("whitelist") or []
     except Exception:
@@ -307,7 +307,7 @@ def panel_render():
     else:
         st.warning("视觉 ACL 白名单为空，扫描任何路径都会被拒绝。"
                    "先去「🔐 视觉ACL」页把要扫的目录加进白名单。")
-    p = st.text_input("目录路径", key="rd_scan_path", placeholder=r"G:\0-Learn")
+    p = st.text_input("目录路径", key="rd_scan_path", placeholder="资料目录")
     if st.button("扫描这个目录", key="rd_scan_btn") and p:
         with st.spinner("遍历中……"):
             r = scan_folder(p)

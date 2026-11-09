@@ -1,6 +1,7 @@
 ﻿# 面板桌面快捷方式的启动器：已运行就只开浏览器，没运行就先起服务再打开
 $ErrorActionPreference = "Stop"
-$root = "E:\agent_project"
+# 项目根 = 本脚本所在目录，换盘符/换机器都不用改
+$root = $PSScriptRoot
 $py   = Join-Path $root ".venv\Scripts\python.exe"
 $port = 8501
 $url  = "http://localhost:$port"

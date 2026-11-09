@@ -583,7 +583,7 @@ class AgentChatSpace:
             return
         self._last_vision_ts = now
         path = m.group(1).strip()
-        # 模型常把反斜杠写成双份（E:\\a\\b.png），个别还会写 file:/// 前缀
+        # 模型常把反斜杠写成双份（C:\\a\\b.png），个别还会写 file:/// 前缀
         path = path.replace("\\\\", "\\")
         if path.lower().startswith("file:///"):
             path = path[8:]

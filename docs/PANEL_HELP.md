@@ -17,7 +17,7 @@
 ollama serve
 
 # 2. 启动面板
-cd E:\agent_project
+cd <项目目录>
 .\.venv\Scripts\streamlit run dashboard.py --server.port 8501
 ```
 
@@ -80,7 +80,7 @@ cd E:\agent_project
 ## 七、测试
 
 ```powershell
-cd E:\agent_project
+cd <项目目录>
 .\.venv\Scripts\python.exe -m unittest test_suite -v   # 159 用例全 PASS（约 1 分钟）
 ```
 

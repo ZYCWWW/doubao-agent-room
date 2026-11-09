@@ -304,7 +304,7 @@ if _page == 7:
     new_kb = st.text_input("向量知识库路径 kb.persist_path", value=kb_path, help="Chroma向量库，长期记忆、技能库")
     new_log = st.text_input("日志目录 log.log_path", value=log_path, help="app.log 和 audit.log 存放目录")
     new_ext = st.text_input("外部资料库 external_kb.path", value=ext_path,
-                            help="教材/数据手册/国标 PDF 所在目录，如 G:\\0-Learn；科研七步阶段 2/4 会来检索")
+                            help="教材/数据手册/国标 PDF 所在目录，如 D:\\books；科研七步阶段 2/4 会来检索")
 
     if st.button("保存路径配置"):
         # 路径校验

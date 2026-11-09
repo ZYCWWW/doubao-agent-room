@@ -319,9 +319,6 @@ ReAct（`Thought → Action → Observation`）是**主干**，方法论是可�
 | `docs/PANEL_HELP.md` | 面板逐页使用说明（面板内可查） |
 | `USER_MANUAL.md` | 安装、启动、日常使用 |
 | `docs\history\ARCHITECTURE_V2*.md` | **历史设计稿**，仅作参考（2026-11-06 已归档到 `history\`） |
-| `E:\DS works\agent_project_架构评审.md` | 风险清单 R1–R14 与修复记录 |
-| `E:\DS works\agent_project_冗余与架构优化建议.md` | 冗余清单、死代码、P0/P1/P2 与完成情况 |
-| `E:\DS works\agent_project_变更清单与回滚指引.md` | 逐批变更、备份、回滚脚本 |
 | `docs\ARCHITECTURE_MASTER.md`（本文） | **唯一入口**：架构看这里，别按 V2 系列判断实现 |
 | `CHANGELOG.md`（项目根） | 每次改动的六行记录（时间/文件/改了什么/为什么/影响/怎么还原） |
 | `training\README.md` | 训练路线：L1 提示词 → L2 数据飞轮 → L3 LoRA |
@@ -355,7 +352,7 @@ training/
 
 | 机制 | 位置 | 作用 |
 |---|---|---|
-| git 仓库 | `E:\agent_project\.git`，分支 `main` | 能看每次改具体哪几行、能一键退回。**纯本地，不推远端** |
+| git 仓库 | `<项目根>\.git` | 能看每次改具体哪几行、能一键退回 |
 | 变动日志 | `CHANGELOG.md` | 每次改动的六行记录 + 回退速查表 |
 | 文件快照 | `.backup\<日期>\` | 改前手动复制，git 之外的兜底 |
 

@@ -75,7 +75,7 @@
 
 ## 四、验收方式
 
-- 每次改动：`cd E:\agent_project; .\.venv\Scripts\python.exe test_suite.py`（基线 **159/159**）
+- 每次改动：`cd <项目目录>; python test_suite.py`（基线 **159/159**）
 - 面板改动：至少 `AppTest` 把改到的页渲染一遍，无异常
 - 开源前：`git status` 干净 + `git check-ignore` 确认私人目录被忽略
 

@@ -68,6 +68,16 @@ docs/conversations/
 docs/MEMORY.md
 # 本机实际配置（含本机绝对路径），公开仓库只带 config.example.toml
 config/config.toml
+# 视觉 ACL 白名单是本机目录清单，首次运行会自动生成默认配置
+config/vision_acl.json
+# 项目工作日志含大量私人叙述与原话记录，不进公开仓库
+CHANGELOG.md
+# 历史设计稿（已被 ARCHITECTURE_MASTER.md 取代）
+docs/history/
+docs/ARCHITECTURE_V2.md
+docs/ARCHITECTURE_V2_DETAILED.md
+docs/ARCHITECTURE_V2_INTEGRATED.md
+docs/ARCHITECTURE_V2_SCIENTIFIC.md
 # 封存的独立实验（PCB/AD 等），不进公开仓库
 archive/
 # 拆除功能的归档（2026-11-08 猜想库 106 个历史文件 + 被否提案），不进库
