@@ -82,3 +82,14 @@ docs/ARCHITECTURE_V2_SCIENTIFIC.md
 archive/
 # 拆除功能的归档（2026-11-08 猜想库 106 个历史文件 + 被否提案），不进库
 _archive/
+
+# --- 公开版专用：私人叙事与内部工作文档 ---
+# 这些是写给"屋里的人"看的，含个人经历与指令原文，不进公开仓库
+docs/WELCOME.md
+docs/HOME.md
+docs/TEACHER_PERSONA.md
+docs/PANEL_SCOPE.md
+docs/PANEL_TODO.md
+docs/PAIRING.md
+# 内部开源清单（发布计划、红线、谁按按钮），不是对外文档
+docs/OPEN_SOURCE.md
