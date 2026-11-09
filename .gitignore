@@ -12,7 +12,8 @@ config/secrets.toml
 
 # --- 以下为 2026-11-06 接入 git 时补充 ---
 # 运行时数据与日志：体积会涨、每写一次就变，不进库
-cache/
+# 注意：必须锚定根目录（前导 /），否则连源码目录 core/cache/ 一起被忽略
+/cache/
 .backup/
 *.tmp
 .tmp_*

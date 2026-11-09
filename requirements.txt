@@ -1,25 +1,30 @@
+# 依赖锁定版本（= 本项目开发机 2026-11-09 实测通过的版本）
+# 全部为直接依赖；完整传递依赖见 requirements.lock.txt
+# 安装：pip install -r requirements.txt
+# 注意：sentence-transformers 会拉入 torch，首次安装体积较大（数 GB）
+
 # 基础网络
-requests>=2.32.3
+requests==2.34.2
 
 # 向量知识库
-chromadb>=0.5.11
-sentence-transformers>=3.0.1
+chromadb==1.5.9
+sentence-transformers==6.2.0
 
-# 文本token
-tiktoken>=0.7.0
+# 文本 token
+tiktoken==0.14.0
 
-# toml配置解析
-tomli>=2.0.1
+# toml 配置解析（Python 3.11+ 可用标准库 tomllib 兜底）
+tomli==2.5.0
 
 # 桌面自动化
-pyautogui>=0.9.54
+pyautogui==0.9.54
 
-# 可视化dashboard
-streamlit>=1.39.0
+# 可视化 dashboard
+streamlit==1.66.1
 
 # 图像处理
-Pillow>=10.4.0
+Pillow==13.0.0
 
-# uuid、datetime属于标准库，不用写
-# 可选：如果后续要md/mermaid绘图
-mermaid-py>=0.1.6
+# uuid、datetime 属于标准库，不用写
+# 可选：md/mermaid 绘图
+mermaid-py==0.9.0
