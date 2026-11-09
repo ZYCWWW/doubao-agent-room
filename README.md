@@ -37,6 +37,10 @@ python -m venv .venv
 # Linux/mac: source .venv/bin/activate
 pip install -r requirements.txt
 
+# 依赖已锁精确版本，保证装出来的环境一致。
+# 首次安装会拉入 torch（经 sentence-transformers），体积较大，请留足时间和磁盘。
+# 需要连传递依赖一起复现时：pip install -r requirements.lock.txt
+
 # 复制示例配置，按自己机器改（不改也能跑，全用默认值）
 copy config\config.example.toml config\config.toml      # Windows
 cp config/config.example.toml config/config.toml        # Linux/macOS
