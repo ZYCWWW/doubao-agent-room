@@ -35,9 +35,17 @@
 import ctypes
 import json
 import os
+import sys
 import threading
 import time
 import uuid
+
+# 视觉工作台依赖 Win32 窗口嵌入 + tkinter，只能在 Windows 桌面上跑。
+# 其他平台直接给出可读提示并正常退出，避免面板点了按钮后子进程抛 AttributeError。
+if sys.platform != "win32":
+    sys.stderr.write("视觉工作台仅支持 Windows 桌面环境（依赖 Win32 窗口嵌入）。\n")
+    sys.exit(0)
+
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 import tkinter as tk
