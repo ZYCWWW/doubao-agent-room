@@ -8,8 +8,8 @@
 
 用法：
     python tools/archive_conversation.py                 # 导出所有会话
-    python tools/archive_conversation.py --session 38451289682760450
-    python tools/archive_conversation.py --out D:\\memories
+    python tools/archive_conversation.py --session <会话ID>
+    python tools/archive_conversation.py --out <输出目录>
 
 输出：<out>/<会话ID>_对话原文.md
 """
