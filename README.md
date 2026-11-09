@@ -13,7 +13,7 @@
 - **ReAct 主循环**：任务拆解 → 调工具 → 观察结果 → 再规划，带审批队列（危险操作要人点头）
 - **多模型协作**：本地 Ollama 跑若干个模型，按角色分派（推理 / 快速 / 视觉）
 - **记忆分层**：短期上下文 → 情景记忆（四分区打分下沉）→ 长期知识库（三个集合）
-- **可视化面板**：一个 Streamlit 单页，15 个页签，覆盖调度、审批、知识库、沙盘、插件、教学等
+- **可视化面板**：一个 Streamlit 单页，内置 7 页，插件各自带自己的页签
 - **视觉工作台**：把一个桌面软件"嵌进舞台"，让模型只在那一块窗口里看图与操作
 - **插件系统**：`plugins/installed/` 放本地插件，热加载，面板自动出现新页签
 
@@ -72,7 +72,7 @@ core/          主循环、模型路由、记忆、知识库、插件注册、�
 services/      长期闲聊、书库、聊天空间等常驻服务
 tools/         暴露给模型的工具函数
 plugins/       已安装插件 + 市场目录
-dashboard.py   Streamlit 面板（15 页）
+dashboard.py   Streamlit 面板（内置 7 页 + 插件页）
 main.py        命令行 ReAct 入口
 config/        配置模板与运行时清单
 docs/          架构与面板文档
@@ -95,4 +95,3 @@ MIT，见 [LICENSE](LICENSE)。
 - 架构总览：[`docs/ARCHITECTURE_MASTER.md`](docs/ARCHITECTURE_MASTER.md)
 - 面板逐页说明：[`docs/PANEL_HELP.md`](docs/PANEL_HELP.md)
 - 使用手册（含视觉工作台细节）：[`USER_MANUAL.md`](USER_MANUAL.md)
-- 变更记录：[`CHANGELOG.md`](CHANGELOG.md)

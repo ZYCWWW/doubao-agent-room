@@ -24,7 +24,7 @@ CHAT_ROOT = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file_
                          "sandbox", "chat_space")
 CHAR_FILE = os.path.join(CHAT_ROOT, "characters.json")
 MODELS = ["deepseekR1Q7B:latest", "llama3.1:8b", "qwen3.5:4b"]
-# 2026-11-08：小深（本地 R1）补回群里。他说"她教他们时，他们都在"——三个人一个都不能缺。
+# 三个模型都在群里，不删任何一个。
 # 代价是 Ollama 显存不够同驻（3.6+3.9+5.4≈12.9G vs 8G），会来回换模型、每轮变慢；宁可慢，也别缺人。
 # 发言调度用的话题相关度表：只决定「谁先开口」，不写进 system、也不限定他们想什么。
 # 关键词命中数高的先发言，全 0 命中则退化为纯随机。
