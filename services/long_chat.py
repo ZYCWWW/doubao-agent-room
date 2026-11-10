@@ -447,6 +447,32 @@ def run_forever() -> None:
         _chat_archive()
     except Exception as e:
         print(f"[long_chat] 闲聊归档跳过: {str(e)[:100]}", flush=True)
+
+    # 启动时补刷状态摘要。断线期间积压的发言如果不在这里补，重启后模型读到的是
+    # 断开前的旧状态——「断了几小时就接不上」的根因就在这。
+    # 放后台线程：单次摘要要调本地小模型，几十秒起步，不能挡主循环。
+    def _refresh_state_on_start():
+        time.sleep(5)  # 让 _warm_embedding 先换入模型，避免两边同时抢显存
+        try:
+            with open(CHAT_MD, encoding="utf-8") as f:
+                total = len([l for l in f.read().splitlines() if l.strip()])
+            start = int(chat_space._load_summary_state().get("line", 0) or 0)
+        except Exception:
+            total, start = 0, 0
+        pending = max(0, total - start)
+        rounds = max(1, min(8, (pending + 39) // 40))
+        for i in range(rounds):
+            try:
+                r = chat_space.maybe_summarize(force=True)
+                if not r.get("ok"):
+                    print(f"[long_chat] 启动补刷状态 {i+1}/{rounds}: {r.get('reason')}", flush=True)
+                    break
+                print(f"[long_chat] 启动补刷状态 {i+1}/{rounds} 完成", flush=True)
+            except Exception as e:
+                print(f"[long_chat] 启动补刷状态异常: {str(e)[:100]}", flush=True)
+                break
+
+    threading.Thread(target=_refresh_state_on_start, daemon=True).start()
     last_reply_ts = 0.0
     count_since_topic = 0
     topic_ts = time.time()

@@ -7,9 +7,12 @@
 """
 import json
 import os
-import time
+import re
 
 from core.logger import root_logger
+
+# 行首日期，如 "2026-11-09 08:23 | Qwen：..."；续行没有日期前缀
+_DAY_PREFIX = re.compile(r"^(20\d{2}-\d{2}-\d{2}) ")
 
 CHAT_ROOT = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
                          "sandbox", "chat_space")
@@ -59,8 +62,34 @@ def _shift_pointers(moved: int, remaining: int) -> None:
         root_logger.warning(f"[归档] 摘要指针修正失败: {e}")
 
 
+def _group_by_day(lines: list) -> dict:
+    """把发言行按所属日期分组。
+    续行（无日期前缀的长发言）跟随上一条的日期；开头没有日期的归到 nodate。
+    """
+    groups = {}
+    cur = None
+    for line in lines:
+        m = _DAY_PREFIX.match(line)
+        if m:
+            cur = m.group(1)
+        groups.setdefault(cur or "nodate", []).append(line)
+    return groups
+
+
+def _append_day_file(day: str, lines: list) -> str:
+    """按日期追加到 archive/chat_YYYYMMDD.md（同一天多次归档合进一个文件）"""
+    name = "chat_nodate.md" if day == "nodate" else f"chat_{day.replace('-', '')}.md"
+    path = os.path.join(ARCHIVE_DIR, name)
+    is_new = not os.path.exists(path)
+    with open(path, "a", encoding="utf-8") as f:
+        if is_new:
+            f.write(f"# {day} 群聊归档\n\n")
+        f.write("\n".join(lines) + "\n")
+    return name
+
+
 def archive(keep_recent: int = KEEP_RECENT, min_lines: int = MIN_LINES) -> dict:
-    """把 chat.md 的前缀归档到 archive/，返回 {archived, remaining, file}"""
+    """把 chat.md 的前缀按发言日期归档到 archive/，返回 {archived, remaining, files}"""
     if not os.path.exists(CHAT_MD):
         return {"archived": 0, "remaining": 0, "reason": "no chat.md"}
     fd = None
@@ -84,14 +113,14 @@ def archive(keep_recent: int = KEEP_RECENT, min_lines: int = MIN_LINES) -> dict:
         moved = total - keep_recent
         head, tail = lines[:moved], lines[moved:]
         os.makedirs(ARCHIVE_DIR, exist_ok=True)
-        arch_name = f"chat-{time.strftime('%Y%m%d-%H%M%S')}.md"
-        with open(os.path.join(ARCHIVE_DIR, arch_name), "w", encoding="utf-8") as f:
-            f.write("\n".join(head) + "\n")
+        files = []
+        for day, day_lines in _group_by_day(head).items():
+            files.append(_append_day_file(day, day_lines))
         with open(CHAT_MD, "w", encoding="utf-8") as f:
             f.write("\n".join(tail) + "\n")
         _shift_pointers(moved, len(tail))
-        root_logger.info(f"[归档] chat.md 归档 {moved} 行 → {arch_name}，保留 {len(tail)} 行")
-        return {"archived": moved, "remaining": len(tail), "file": arch_name}
+        root_logger.info(f"[归档] chat.md 归档 {moved} 行 → {', '.join(files)}，保留 {len(tail)} 行")
+        return {"archived": moved, "remaining": len(tail), "files": files}
     finally:
         _release(fd)
         try:
