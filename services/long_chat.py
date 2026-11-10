@@ -406,6 +406,62 @@ def _trim(s: str, n: int = 90) -> str:
     s = " ".join(str(s).split())
     return s if len(s) <= n else s[:n] + "…"
 
+def _recent_archive_hit(body: str, days: int = 5) -> str:
+    """这句话里的核心片段，最近几天在按日归档里出现过吗？
+
+    命中返回「哪一天聊过、原话里含哪个片段」，否则空串。
+
+    为什么要它：锚可以自己长，但「自己长了什么」没有历史检查——同一个谜语
+    连着两天出，答案还每次不一样（11-09 答抹布，11-10 答水）。这里给生成
+    装一个最低限度的记忆：先看看这话是不是老调重弹。
+
+    只查归档，不查向量库：实测记忆库里根本没有群聊（存的是「猜想结论」，
+    按「越洗越脏」检索出来的全是医疗影像、量子纠缠，距离 0.5 上下，全不相干）。
+    """
+    base = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    d = os.path.join(base, "sandbox", "chat_space", "archive")
+    if not body or not os.path.isdir(d):
+        return ""
+    files = sorted([f for f in os.listdir(d) if f.startswith("chat_") and f.endswith(".md")],
+                   reverse=True)[:days]
+    if not files:
+        return ""
+
+    # 候选：先按标点切成短语，短语本身 + 短语内的 n-gram。
+    # 不这么做的话，「越洗越脏」这种 4 字关键词会被两边的标点吃掉——
+    # 按 6 字窗口取，任何包含它的片段都带逗号，全被过滤，关键词永远进不了候选。
+    phrases = [p for p in re.split(r"[，。！？；：、（）“”\s—\-]+", body) if p]
+    cands = []
+    for ph in phrases:
+        L = len(ph)
+        if 4 <= L <= 40:
+            cands.append(ph)
+        for size in (10, 8, 6):
+            if L >= size:
+                step = max(1, (L - size) // 3 or 1)
+                for i in range(0, L - size + 1, step):
+                    cands.append(ph[i:i + size])
+    cands = list(dict.fromkeys(cands))[:40]
+    if not cands:
+        return ""
+
+    for name in files:
+        try:
+            with open(os.path.join(d, name), encoding="utf-8", errors="replace") as f:
+                content = f.read()
+        except Exception:
+            continue
+        for frag in cands:
+            if frag in content:
+                if content.count(frag) > 15:
+                    # 口头禅/模板话术（反复出现的固定说法），不算「话题重复」
+                    continue
+                stamp = name.replace("chat_", "").replace(".md", "")
+                if len(stamp) == 8:
+                    stamp = f"{stamp[:4]}-{stamp[4:6]}-{stamp[6:8]}"
+                return f"这段 {stamp} 聊过（原话里含「{frag}」）"
+    return ""
+
 def _anchor_topic() -> str:
     """从三处锚里挑一条此刻值得想的事；没有锚返回空串（调用方回退固定清单）。
 
@@ -418,46 +474,69 @@ def _anchor_topic() -> str:
     「一张写死的清单」换成「此刻真实存在的事」。锚还是被喂进去的，
     只是喂的东西终于是眼前发生过的。
     """
+    text, body = "", ""
+
     # 1) 还没解决的问题：优先，取最老的一条（搁得越久越是真的没结）
     try:
         st = chat_space.read_state() or {}
         oqs = [str(q).strip() for q in (st.get("open_questions") or []) if len(str(q).strip()) >= 10]
         if oqs:
-            return f"还没解决的问题：{_trim(oqs[0], 80)}（接着往下推，或者换个角度都行）"
+            body = oqs[0]
+            text = f"还没解决的问题：{_trim(body, 80)}（接着往下推，或者换个角度都行）"
     except Exception:
         pass
 
     # 2) 最近发言的落点：取最后一条非广播发言，逼它先判「站不站得住」
-    try:
-        recent = chat_space._recent(3)
-        lines = [l for l in recent.splitlines() if l.strip()]
-        if lines:
-            last = lines[-1]
-            body = re.sub(r"^\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}\s*\|\s*[^：:|]{1,12}[：:]\s*", "", last).strip()
-            if len(body) >= 12:
-                looks_like_claim = ("？" not in body and "?" not in body
-                                    and not any(k in body for k in ("接龙", "字头", "谜语", "下一个", "轮到")))
-                if looks_like_claim:
-                    return f"刚才那句先别急着接：{_trim(body, 90)} 它到底站不站得住？"
-                return f"接着刚才这条往下：{_trim(body, 90)}（别换题，把它说圆）"
-    except Exception:
-        pass
+    if not text:
+        try:
+            recent = chat_space._recent(3)
+            lines = [l for l in recent.splitlines() if l.strip()]
+            if lines:
+                last = lines[-1]
+                body = re.sub(r"^\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}\s*\|\s*[^：:|]{1,12}[：:]\s*", "", last).strip()
+                if len(body) >= 12:
+                    looks_like_claim = ("？" not in body and "?" not in body
+                                        and not any(k in body for k in ("接龙", "字头", "谜语", "下一个", "轮到")))
+                    if looks_like_claim:
+                        text = f"刚才那句先别急着接：{_trim(body, 90)} 它到底站不站得住？"
+                    else:
+                        text = f"接着刚才这条往下：{_trim(body, 90)}（别换题，把它说圆）"
+                else:
+                    body = ""
+        except Exception:
+            body = ""
 
     # 3) 记忆里翻到的旧事：不是查答案，是想起一件相关的，然后冒出个问题
-    try:
-        from services.memory_service import memory_service
-        q = chat_space._recent(4)
-        if q.strip():
-            docs = memory_service.search_memory(q, top_k=5) or []
-            for d in docs:
-                text = (d.get("document") or "").strip()
-                dist = d.get("distance", 9.9)
-                if text and dist < 0.80:
-                    return f"想起一件旧事：{_trim(text, 80)} 这件事和现在有什么不一样？"
-    except Exception:
-        pass
+    if not text:
+        try:
+            from services.memory_service import memory_service
+            q = chat_space._recent(4)
+            if q.strip():
+                docs = memory_service.search_memory(q, top_k=5) or []
+                for d in docs:
+                    doc = (d.get("document") or "").strip()
+                    dist = d.get("distance", 9.9)
+                    if doc and dist < 0.80:
+                        body = doc
+                        text = f"想起一件旧事：{_trim(doc, 80)} 这件事和现在有什么不一样？"
+                        break
+        except Exception:
+            pass
 
-    return ""
+    # 统一的历史核对：这个锚是不是老调重弹？
+    # 这一步是「记得」的起点——锚可以自己长，但长出来的东西得知道自己长过。
+    # 实测的病：同一个谜语两天各出一次，11-09 答「抹布」，11-10 答「水」，
+    # 不是模型变笨，是没有东西告诉它昨天说过。
+    if text and body:
+        try:
+            hit = _recent_archive_hit(body)
+            if hit:
+                text = (f"{hit}。这次别复述上次的说法——先说它哪里站不住，"
+                        f"再给一个能落地的。\n{text}")
+        except Exception:
+            pass
+
+    return text
 
 def _open_topic() -> None:
     """主动开新话题（写 chat.md → 目录事件 → 主线程被唤醒后接龙）"""
