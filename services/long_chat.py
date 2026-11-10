@@ -1,7 +1,7 @@
 # services/long_chat.py 长期自动闲聊服务（面板开关控制，支持自动恢复）
 # 事件驱动实现：主线程阻塞在 ReadDirectoryChangesW（文件系统事件，零 CPU 轮询）；
 # chat.md 有新写入 → 被唤醒 → 判断是否需要接龙；空闲由一次性定时器（闹钟）兜底开新话题。
-import os, sys, json, time, ctypes, threading
+import os, sys, json, time, ctypes, threading, re
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from services.agent_chat import chat_space
 
@@ -400,15 +400,81 @@ def _finish(own_pid: int) -> None:
 _idle_timer = None
 _topic_lock = threading.Lock()
 
+ANCHOR_TOPIC = True   # 话题优先从「锚」长出；置 False 退回固定清单
+
+def _trim(s: str, n: int = 90) -> str:
+    s = " ".join(str(s).split())
+    return s if len(s) <= n else s[:n] + "…"
+
+def _anchor_topic() -> str:
+    """从三处锚里挑一条此刻值得想的事；没有锚返回空串（调用方回退固定清单）。
+
+    三处锚对应他说的两类思考：
+      1. open_questions（群里悬着没结的问题）—— 「困扰自己的难题」
+      2. 最近一条发言的落点 —— 「当前问题扩展出去」
+      3. 记忆库检索 —— 「对过往回忆和反思提出问题」
+
+    刻意不做「谁来决定说什么」的假装：这里只是把话题的**来源**从
+    「一张写死的清单」换成「此刻真实存在的事」。锚还是被喂进去的，
+    只是喂的东西终于是眼前发生过的。
+    """
+    # 1) 还没解决的问题：优先，取最老的一条（搁得越久越是真的没结）
+    try:
+        st = chat_space.read_state() or {}
+        oqs = [str(q).strip() for q in (st.get("open_questions") or []) if len(str(q).strip()) >= 10]
+        if oqs:
+            return f"还没解决的问题：{_trim(oqs[0], 80)}（接着往下推，或者换个角度都行）"
+    except Exception:
+        pass
+
+    # 2) 最近发言的落点：取最后一条非广播发言，逼它先判「站不站得住」
+    try:
+        recent = chat_space._recent(3)
+        lines = [l for l in recent.splitlines() if l.strip()]
+        if lines:
+            last = lines[-1]
+            body = re.sub(r"^\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}\s*\|\s*[^：:|]{1,12}[：:]\s*", "", last).strip()
+            if len(body) >= 12:
+                looks_like_claim = ("？" not in body and "?" not in body
+                                    and not any(k in body for k in ("接龙", "字头", "谜语", "下一个", "轮到")))
+                if looks_like_claim:
+                    return f"刚才那句先别急着接：{_trim(body, 90)} 它到底站不站得住？"
+                return f"接着刚才这条往下：{_trim(body, 90)}（别换题，把它说圆）"
+    except Exception:
+        pass
+
+    # 3) 记忆里翻到的旧事：不是查答案，是想起一件相关的，然后冒出个问题
+    try:
+        from services.memory_service import memory_service
+        q = chat_space._recent(4)
+        if q.strip():
+            docs = memory_service.search_memory(q, top_k=5) or []
+            for d in docs:
+                text = (d.get("document") or "").strip()
+                dist = d.get("distance", 9.9)
+                if text and dist < 0.80:
+                    return f"想起一件旧事：{_trim(text, 80)} 这件事和现在有什么不一样？"
+    except Exception:
+        pass
+
+    return ""
+
 def _open_topic() -> None:
     """主动开新话题（写 chat.md → 目录事件 → 主线程被唤醒后接龙）"""
     st = _read_state()
     if st.get("stop_requested"):
         return
+    topic = ""
+    if ANCHOR_TOPIC:
+        try:
+            topic = _anchor_topic()
+        except Exception:
+            topic = ""
     with _topic_lock:
-        topic_idx = int(st.get("topic_idx", 0))
-        topic = TOPICS[topic_idx % len(TOPICS)]
-        st["topic_idx"] = topic_idx + 1
+        if not topic:
+            topic_idx = int(st.get("topic_idx", 0))
+            topic = TOPICS[topic_idx % len(TOPICS)]
+        st["topic_idx"] = int(st.get("topic_idx", 0)) + 1
         _write_state(st)
     chat_space.doubao_speak(f"🎯 新话题轮：{topic}（接话题的接，想聊别的也随意）")
 
