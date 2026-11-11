@@ -16,6 +16,15 @@
 - **可视化面板**：一个 Streamlit 单页，内置 7 页，插件各自带自己的页签
 - **视觉工作台**：把一个桌面软件"嵌进舞台"，让模型只在那一块窗口里看图与操作
 - **插件系统**：`plugins/installed/` 放本地插件，热加载，面板自动出现新页签
+- **概念探针**：判断模型是“真懂”还是“碰巧答对”（判别 / 执行 / 自查三条轴，见 `docs/CONCEPT_PROBE.md`）
+
+## 关于名字：这里的「豆包」是什么
+
+项目里的「豆包」是一个**参与者角色名**（群聊里的一个说话人），**不是字节跳动的豆包 App**，
+也不需要豆包的任何账号或 Key。它和 Llama / Qwen 一样，只是一个被分配了名字与性格的本地模型；
+你可以给它改名、删掉、或换成别的模型，其余部分不受影响。
+
+需要接云端模型时，走的是**任意 OpenAI 兼容接口**（见「配置与密钥」），与豆包无关。
 
 ## 你需要什么
 
@@ -113,3 +122,4 @@ MIT，见 [LICENSE](LICENSE)。
 - 架构总览：[`docs/ARCHITECTURE_MASTER.md`](docs/ARCHITECTURE_MASTER.md)
 - 面板逐页说明：[`docs/PANEL_HELP.md`](docs/PANEL_HELP.md)
 - 使用手册（含视觉工作台细节）：[`USER_MANUAL.md`](USER_MANUAL.md)
+- 概念探针范式（评测方法，不是解题方法）：[`docs/CONCEPT_PROBE.md`](docs/CONCEPT_PROBE.md)

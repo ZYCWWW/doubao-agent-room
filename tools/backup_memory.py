@@ -7,7 +7,7 @@
   2. docs/conversations  每日对话纪要 + raw 原文
   3. sandbox/chat_space  群聊流水、状态、按日归档、小屋记录
 
-输出：E:\\记忆备份\\YYYYMMDD\\
+输出：<备份根目录>\\YYYYMMDD\\
       manifest.json 记录每个文件的来源、大小、sha1、失败清单
       同目录上一次的失败清单会保留，方便对照
 
