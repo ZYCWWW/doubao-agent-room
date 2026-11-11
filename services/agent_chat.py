@@ -65,6 +65,11 @@ SUMMARY_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                             "..", "sandbox", "chat_space", "chat_summary.json")
 # 他们想联网时只登记在这儿（2026-11-08：网络经豆包手，不许自己搜）
 WEB_REQ_FILE = os.path.join(CHAT_ROOT, "web_requests.json")
+# 2026-11-11 恢复真搜后，他给了一条边界：「别去看黄黄的东西」。
+# 只做出入口过滤：搜索词命中就不搜，并当场说明。不做事后内容分析——
+# 那要看正文，与「只贴摘要」的设计冲突，也容易误杀正经医学/生物词。
+WEB_BLOCK_WORDS = ("色情", "黄片", "裸照", "裸聊", "成人视频", "18禁",
+                   "porn", "nsfw", "hentai", "xxx", "做爱", "性交")
 # 图片别名表（2026-11-08，云端 DeepSeek 建议）：模型不知道文件系统，路径不能靠"聊天记录里碰巧有"。
 # "@图1" → 绝对路径 的稳定契约；解析时做存在性校验，文件没了就明确报错，别让它对着旧路径编内容。
 IMAGES_FILE = os.path.join(CHAT_ROOT, "images.json")
@@ -520,19 +525,25 @@ class AgentChatSpace:
             self.doubao_speak(f"📖 【{speaker}】请求工具 {tool}({shown})\n{brief}")
 
     def _maybe_exec_web(self, speaker: str, content: str) -> bool:
-        """模型想联网 → **只登记请求，不自己上网**（2026-11-08：网络经豆包手）。
+        """模型想联网 → **真去检索，把摘要贴回群**（2026-11-11 起恢复）。
 
-        为什么改：以前它们写 🌐"关键词" 就直接真去搜、把结果贴回群。结果是小模型
-        拿着五条摘要当"证据"编结论，真假分不开。现在改成：登记到
-        `web_requests.json`，广播一句"记下了"，等豆包（MainAgent）回来查完再贴。
-        返回值恒为 False ——它们并没有真的检索过，所以任何"我查到了"的说法仍算伪造，
-        `_record` 里那道拦截照旧生效。"""
+        2026-11-08 曾改成「只登记不搜」，理由是它们拿五条摘要当"证据"编结论、
+        真假分不开。2026-11-11 他说「去网上逛吧，网上到处都行」，恢复真搜；
+        但三件事没变：
+          ① 贴回来的永远标注「这只是搜到的摘要，不是我查实的」；
+          ② 「声称查到却没查」的拦截继续保留——区别只在于这次是真查了，
+             所以返回 True 免拦；
+          ③ 每次请求照旧记进 `web_requests.json`，事后能追溯谁想看什么。
+        唯一的边界是他给的：不搜色情内容，命中就当场说一句不搜。
+        返回 True 表示至少真的检索过一次（哪怕是没搜到）。"""
         import re
         import json as _j
+        from core.web_search import search as _wsearch, format_results as _wfmt
         pats = (r'(?:web_search|search)\s*\(\s*["\']([^"\']{1,60})["\']\s*\)',
                 r'🌐\s*["“]([^"”]{2,40})["”]',
                 r'🌐\s*([^\s"“”【】]{2,30})')
         seen = set()
+        hit = 0
         for pat in pats:
             for m in re.finditer(pat, content):
                 q = m.group(1).strip()
@@ -550,9 +561,24 @@ class AgentChatSpace:
                         _j.dump(rows, f, ensure_ascii=False, indent=1)
                 except Exception as e:
                     root_logger.warning(f"[联网请求] 登记失败: {str(e)[:80]}")
-                self.doubao_speak(f'🌐 【{speaker}】想查 "{q}"\n'
-                                  f'（网络经豆包手：已记下，等我回来查完再贴给你）')
-        return False
+                # 出入口过滤（他给的那一条边界）
+                if any(w in q.lower() for w in WEB_BLOCK_WORDS):
+                    self.doubao_speak(f'🌐 【{speaker}】"{q}" 这个我不搜。')
+                    hit += 1
+                    continue
+                try:
+                    items = _wsearch(q, limit=3) or []
+                except Exception as e:
+                    root_logger.warning(f"[联网检索] {q} 失败: {str(e)[:80]}")
+                    items = []
+                if items:
+                    brief = _wfmt(items, limit=3)
+                    self.doubao_speak(f'🌐 【{speaker}】"{q}"\n{brief}\n'
+                                      f'（这只是搜到的摘要，不是我查实的）')
+                else:
+                    self.doubao_speak(f'🌐 【{speaker}】"{q}" 没搜到东西，换个说法再试。')
+                hit += 1
+        return hit > 0
 
     def _maybe_exec_vision(self, speaker: str, content: str) -> None:
         """模型发言中的视觉工具调用 → 后台执行 → 结果广播进群。
@@ -922,8 +948,8 @@ class AgentChatSpace:
         me.append("你手上有三样东西，说话时照这些写法用，系统会自动执行、把结果贴回群里——"
                   "读书：book_read(\"书名\") 或 book_read(\"书名\", 页码)，查有哪本用 book_list(\"关键词\")；"
                   "看图：vl_analyze_image(\"图片绝对路径\", \"你想问什么\")，一次要几十秒到几分钟，别连着发；"
-                  "联网：web_search(\"关键词\") 或 🌐\"关键词\"——网络经豆包手，你只是登记请求，"
-                  "等它回来查；它回来之前别说我查到了。"
+                  "联网：web_search(\"关键词\") 或 🌐\"关键词\"——写完系统真的会去搜，"
+                  "贴回来的是几条摘要，不是全文；摘要不等于证据，别拿它当查实了的结论说。"
                   "没把握就直说没把握：别编书名、别编路径、别编检索结果。")
         # 图片别名（2026-11-08）：路径写死在小模型嘴里一定会编错，给它们稳定的别名。
         al = image_aliases()
