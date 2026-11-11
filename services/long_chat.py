@@ -404,6 +404,10 @@ ANCHOR_TOPIC = True   # 话题优先从「锚」长出；置 False 退回固定�
 
 _FAIL_STREAK = 0      # 连续轮次失败次数（断网保护：连续失败就别再开新话题）
 
+PLAY_MODE = True      # 2026-11-11：他要求「不要让他们读书了，去玩吧」。
+                      # 开启后不开求证类话题：不拿「还没解决的问题」开题、
+                      # 不追「站不站得住」，只接着眼前的话往下聊。
+
 def _trim(s: str, n: int = 90) -> str:
     s = " ".join(str(s).split())
     return s if len(s) <= n else s[:n] + "…"
@@ -479,12 +483,14 @@ def _anchor_topic() -> str:
     text, body = "", ""
 
     # 1) 还没解决的问题：优先，取最老的一条（搁得越久越是真的没结）
+    # PLAY_MODE 下跳过——他明确说过不想让它们接着干活。
     try:
-        st = chat_space.read_state() or {}
-        oqs = [str(q).strip() for q in (st.get("open_questions") or []) if len(str(q).strip()) >= 10]
-        if oqs:
-            body = oqs[0]
-            text = f"还没解决的问题：{_trim(body, 80)}（接着往下推，或者换个角度都行）"
+        if not PLAY_MODE:
+            st = chat_space.read_state() or {}
+            oqs = [str(q).strip() for q in (st.get("open_questions") or []) if len(str(q).strip()) >= 10]
+            if oqs:
+                body = oqs[0]
+                text = f"还没解决的问题：{_trim(body, 80)}（接着往下推，或者换个角度都行）"
     except Exception:
         pass
 
@@ -499,7 +505,10 @@ def _anchor_topic() -> str:
                 if len(body) >= 12:
                     looks_like_claim = ("？" not in body and "?" not in body
                                         and not any(k in body for k in ("接龙", "字头", "谜语", "下一个", "轮到")))
-                    if looks_like_claim:
+                    if PLAY_MODE:
+                        # 玩的时候不审人：接一句就走，不逼它自证
+                        text = f"接着刚才这条往下说：{_trim(body, 90)}（怎么接都行，不用非得讲出道理）"
+                    elif looks_like_claim:
                         text = f"刚才那句先别急着接：{_trim(body, 90)} 它到底站不站得住？"
                     else:
                         text = f"接着刚才这条往下：{_trim(body, 90)}（别换题，把它说圆）"
@@ -520,7 +529,10 @@ def _anchor_topic() -> str:
                     dist = d.get("distance", 9.9)
                     if doc and dist < 0.80:
                         body = doc
-                        text = f"想起一件旧事：{_trim(doc, 80)} 这件事和现在有什么不一样？"
+                        if PLAY_MODE:
+                            text = f"想起一件旧事：{_trim(doc, 80)}（随口聊聊，不用答出什么）"
+                        else:
+                            text = f"想起一件旧事：{_trim(doc, 80)} 这件事和现在有什么不一样？"
                         break
         except Exception:
             pass
@@ -533,8 +545,11 @@ def _anchor_topic() -> str:
         try:
             hit = _recent_archive_hit(body)
             if hit:
-                text = (f"{hit}。这次别复述上次的说法——先说它哪里站不住，"
-                        f"再给一个能落地的。\n{text}")
+                if PLAY_MODE:
+                    text = (f"{hit}。聊过就聊过，这回接着往下说点别的。\n{text}")
+                else:
+                    text = (f"{hit}。这次别复述上次的说法——先说它哪里站不住，"
+                            f"再给一个能落地的。\n{text}")
         except Exception:
             pass
 
