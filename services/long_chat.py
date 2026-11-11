@@ -402,6 +402,8 @@ _topic_lock = threading.Lock()
 
 ANCHOR_TOPIC = True   # 话题优先从「锚」长出；置 False 退回固定清单
 
+_FAIL_STREAK = 0      # 连续轮次失败次数（断网保护：连续失败就别再开新话题）
+
 def _trim(s: str, n: int = 90) -> str:
     s = " ".join(str(s).split())
     return s if len(s) <= n else s[:n] + "…"
@@ -540,6 +542,10 @@ def _anchor_topic() -> str:
 
 def _open_topic() -> None:
     """主动开新话题（写 chat.md → 目录事件 → 主线程被唤醒后接龙）"""
+    # 连续几轮都失败，大概率是断网/上游挂了。这时候再开话题，只是往群里堆
+    # 一堆没人能接的话——等网回来时，那些话题全成了噪音。
+    if _FAIL_STREAK >= 3:
+        return
     st = _read_state()
     if st.get("stop_requested"):
         return
@@ -676,7 +682,12 @@ def run_forever() -> None:
                 continue
             # 有新鲜发言（豆包话题/示范 或 模型接龙）→ 回应
             try:
+                global _FAIL_STREAK
                 r = chat_space.chat_round(mode="chat")
+                if isinstance(r, dict) and r.get("ok") is False and not r.get("busy"):
+                    _FAIL_STREAK += 1
+                else:
+                    _FAIL_STREAK = 0
                 last_reply_ts = time.time()
                 count_since_topic += 1
                 print(f"[long_chat] 回应 {len(r['round'])} 条", flush=True)
