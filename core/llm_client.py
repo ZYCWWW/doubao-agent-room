@@ -76,9 +76,7 @@ class LLMClient:
             for attempt in range(1, max_attempts + 1):
                 try:
                     with timer("llm_chat"):
-                        resp = requests.post(self.url, json=payload, timeout=timeout)
-                        resp.raise_for_status()
-                        data = resp.json()
+                        data = self._post_json(payload, timeout)
                     content = (data.get("message") or {}).get("content") or ""
                     if not content.strip():
                         # 思考型模型：正文可能落在 thinking 字段，回退取用，避免群聊里"永远不开口"
@@ -124,6 +122,31 @@ class LLMClient:
                     root_logger.warning(f"LLM请求异常 重试 {attempt}/{limit}: {e}")
                     metrics.count("llm_retry")
                     time.sleep(0.5 * attempt)
+
+    def _post_json(self, payload, timeout):
+        """POST 并解析 JSON，带墙钟总时长上限。
+
+        为什么不只靠 requests 的 socket 超时：
+        Ollama 在生成期会持续往连接里写空 chunk，socket 读超时（两块数据之间）
+        因此被反复重置，永远触发不了。2026-11-12 实测出现过单次调用挂
+        13281.6s（3 小时 41 分），期间没有任何重试日志——正是这个机制。
+        这里另加一道墙钟：从发出请求算起超过 timeout*2 就主动断开。
+        """
+        t0 = time.time()
+        deadline = float(timeout) * 2.0
+        resp = requests.post(self.url, json=payload, timeout=timeout, stream=True)
+        try:
+            resp.raise_for_status()
+            buf = []
+            for chunk in resp.iter_content(chunk_size=4096):
+                if time.time() - t0 > deadline:
+                    raise requests.exceptions.ReadTimeout(
+                        f"总时长超过 {deadline:.0f}s（墙钟兜底，Ollama 生成期心跳会重置 socket 超时），已主动断开")
+                if chunk:
+                    buf.append(chunk)
+            return json.loads(b"".join(buf))
+        finally:
+            resp.close()
 
     def chat_openai(self, messages: list, temperature=0.9, model: str = None,
                     timeout: float = None) -> LLMResponse:
