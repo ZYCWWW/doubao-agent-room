@@ -4,6 +4,15 @@ import sys
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
 
+# 控制台编码统一为 UTF-8：Windows GBK 控制台遇到 emoji（如 ❌）会抛 UnicodeEncodeError，
+# 让日志本身变成一屏 traceback。errors="replace" 保证打不出来的字符降级为 ?，不中断日志。
+for _stream in (sys.stdout, sys.stderr):
+    if hasattr(_stream, "reconfigure"):
+        try:
+            _stream.reconfigure(encoding="utf-8", errors="replace")
+        except Exception:
+            pass
+
 # 项目根目录：本文件位于 <项目根>/core/logger.py，日志固定落在项目根/logs，与启动目录无关
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 LOG_DIR = PROJECT_ROOT / "logs"
