@@ -94,6 +94,8 @@ ollama pull deepseekR1Q7B:latest  # 主模型（如果要用）
 
 面板和群聊都要有人拉起。用**计划任务**，不要靠手动。
 
+> 注：下面的 `onlogon` 版本需要**用户登录**才会跑。无人值守（停在登录界面）的机器请用 `AtStartup` + `S4U`，命令见第六节 6.3。
+
 **面板（开机即起，用户登录后）：**
 
 ```powershell
@@ -246,3 +248,86 @@ rsync -a --delete "//<主机>/记忆备份/$(date +%Y%m%d)/" "/mnt/backup/$(date
 3. **控制台 emoji 报错**：Windows GBK 控制台遇到 `❌` 会抛 `UnicodeEncodeError`，已在 `core/logger.py` 统一成 UTF-8 处理。
 4. **模型“已加载”不等于在显存里**：`/api/ps` 里 `size_vram` 远小于 `size` 时，一半层在 CPU，每次调用仍要换入，慢几十秒。
 5. **ARM 装不了 torch**：别硬装，2G 内存的盒子本来就不该跑这个项目。
+
+---
+
+## 六、实测记录：2026-11-14 旧笔记本（Haier，i7-4710MQ / 8G / 2G 显存 / Win10 未激活）
+
+这是"常驻服务器"的第一台实测目标。从裸机到开机自活，以下是**实际**走过的路径与结果，不是设计稿。
+
+### 6.1 硬件与系统事实
+
+| 项 | 实测值 |
+|---|---|
+| CPU / 内存 | i7-4710MQ / 8,114 MB（运行中空闲约 4.2 GB） |
+| 显卡 | NVIDIA GeForce 940M 2048 MB（驱动 22.21.13.8178）+ Intel HD 4600 |
+| 磁盘 | C 盘剩余 65.6 GB（清理安装包后） |
+| 系统 | Windows 10（未激活），PowerShell **5.1.19041.6456** |
+| Python | 3.11.9（官方 amd64 安装包，PrependPath=1） |
+| Ollama | 0.40.16 |
+| 模型 | qwen2.5:3b（下载 1.9 GB，加载占用 2.2 GB） |
+| 实测速度 | **11.1 tok/s**（eval_count=10 / 9.04 s，100% CPU） |
+
+**结论：8G 内存 + 2G 显存的 2014 年笔记本，跑 3B 模型是"能用"的下限，不是"好用"。**
+
+### 6.2 这次踩到的四个坑（都已修进仓库）
+
+1. **`init_env.ps1` 无 BOM** → PS 5.1 按 GBK 解码中文注释，报 `字符串缺少终止符` / `RedirectionNotSupported`，脚本必崩。**已修：`ca77b40` 补 UTF-8 BOM。**（`launch_panel.ps1` 本来就有 BOM，所以它没事）
+2. **`config.example.toml` 写着"路径留空即默认"，代码没实现** → `resolve_path("")` 原样返回空串 → `DB_PATH=".queue.db"` → `os.path.dirname` 得 `''` → `os.makedirs('')` 抛 `WinError 3`，面板起不来。**已修：`3a76c01` 空值回退默认目录 + `queue.py` 的 `makedirs` 加空目录保护。**
+3. **ChromaDB 是同一个空路径根因** → `[kb] persist_path=""` 时报 `unable to open database file (code 14)`。修法同上。
+4. **目标机只有 3389 开放，没法远程接管** → 加开 WinRM：`Enable-PSRemoting -Force -SkipNetworkProfileCheck` + `LocalAccountTokenFilterPolicy=1`，之后可全程远程（`ADMIN=True`）。
+
+### 6.3 常驻的正确做法（不需要登录）
+
+启动文件夹的 `Ollama.lnk`、`onlogon` 任务都要求**用户登录**。无人值守服务器应该用 **`AtStartup` + `S4U`**：
+
+```powershell
+$py  = '<项目路径>\.venv\Scripts\python.exe'
+$set = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries `
+         -RestartCount 3 -RestartInterval (New-TimeSpan -Minutes 1) -ExecutionTimeLimit ([TimeSpan]::Zero)
+$pr  = New-ScheduledTaskPrincipal -UserId 'zyc' -LogonType S4U -RunLevel Highest
+$trg = New-ScheduledTaskTrigger -AtStartup
+
+Register-ScheduledTask -TaskName 'agent_ollama' `
+  -Action (New-ScheduledTaskAction -Execute '<Ollama安装路径>\ollama.exe' -Argument 'serve') `
+  -Trigger $trg -Principal $pr -Settings $set -Force
+
+Register-ScheduledTask -TaskName 'agent_panel' `
+  -Action (New-ScheduledTaskAction -Execute $py -Argument '-m streamlit run dashboard.py --server.headless true --server.port 8501 --browser.gatherUsageStats false' -WorkingDirectory '<项目路径>') `
+  -Trigger $trg -Principal $pr -Settings $set -Force
+```
+
+- `RestartCount 3 / RestartInterval 1min`：进程崩了自动拉回。
+- **删掉启动文件夹里的 `Ollama.lnk`**，否则登录后会再起一个 app 与 serve 抢 11434。
+- 模型常驻：`[Environment]::SetEnvironmentVariable("OLLAMA_KEEP_ALIVE","30m","Machine")`，重启 Ollama 生效；`ollama ps` 的 `UNTIL` 列会显示剩余常驻时间（实测 `29 minutes from now`）。
+
+### 6.4 验证清单实测结果
+
+- [x] `ollama list` / `/api/tags`：qwen2.5:3b 在
+- [x] 面板 8501：本机 `HTTP 200`；**跨机 `http://<主机IP>:8501` 也返回 `200`**（主力机实测）
+- [x] 关键导入链三项全 OK：`tools.desktop_control_tool`、`core.chroma_kb.get_chroma_kb()`、`services.knowledge_service`
+- [x] 真实推理：`react_loop("smoke-remote-01","1+1等于几？")` → 返回 `1+1等于2。`，沙盘节点创建成功
+- [x] 两个计划任务 `Running`，`LastTaskResult=267009`（= 正在运行，正常）
+- [x] 清理安装包回收 **1,798 MB**（OllamaSetup 1,772 + python-setup 25 + agent.zip 1）
+- [ ] **重启验证自启**：尚未执行——需要真的重启这台机器，是唯一没闭环的一条
+
+### 6.5 性能观察（重要）
+
+单次 `react_loop` 冷启动 **81.8 秒**，其中约 80 秒是 `all-MiniLM-L6-v2` embedding 模型初始化（CPU 上 torch 加载），模型推理只占很小一部分。
+
+- 面板进程常驻后，embedding 只初始化一次；
+- 但每次独立进程跑任务都要再付一次——后续可考虑换 ONNX 后端，或把 `KnowledgeService` 做成进程级单例预热。
+- `qwen2.5:3b` 加载日志 `6.2s/8.0s（显存不足需换入）`：2.2 GB 模型 > 2 GB 显存，全 CPU 是预期结果，**不要尝试强行塞显存**。
+
+### 6.6 本次用到的远程部署手法（无 git / GitHub 不可达时）
+
+目标机访问不了 GitHub（443 不通），也没有 git。实际走的是：
+
+```powershell
+# 主力机
+$sess = New-PSSession -ComputerName <目标IP> -Credential $cred
+Copy-Item -ToSession $sess -Path '<主力机文件>' -Destination '<目标机路径>' -Force
+Invoke-Command -Session $sess -ScriptBlock { ... }
+```
+
+只推了 `core/config_loader.py` 和 `core/desktop/queue.py` 两个修复文件，就解决了空路径问题——比等 GitHub 通更直接。
