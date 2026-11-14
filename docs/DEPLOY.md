@@ -331,3 +331,51 @@ Invoke-Command -Session $sess -ScriptBlock { ... }
 ```
 
 只推了 `core/config_loader.py` 和 `core/desktop/queue.py` 两个修复文件，就解决了空路径问题——比等 GitHub 通更直接。
+
+### 6.7 软件精简：服务器上该卸什么、什么绝对不能碰
+
+这台旧笔记本原本装了 20 个传统程序 + 一堆商店应用。做服务器只需要其中很小一部分。
+
+**已卸（实测有效，磁盘 65.6 → 67.49 GB）：**
+
+| 软件 | 为什么卸 | 卸法 |
+|---|---|---|
+| **WeGame**（腾讯游戏平台，548.8 MB） | 服务器不打游戏；它还会挂反作弊模块 | 注册表的卸载器路径是假的，实际卸载器在 `wegame_update\uninst.exe`，且 `/S` 不被支持 → 直接删目录 + 删 `HKLM\...\WOW6432Node\...\Uninstall\WeGame` 键。**确认过没有服务、没有快捷方式，删了不影响系统** |
+| **Microsoft OneDrive** | 云同步盘，服务器不需要，还常驻后台 | `OneDriveSetup.exe /uninstall`，静默干净 |
+| **Copilot** | 微软的 AI 助手，这台机器跑的是我们自己的 agent | `copilot_setup.exe --uninstall --mscopilot --channel=stable --system-level`。注册项会立刻消失，但**程序目录（471 MB）删不掉**（`d3dcompiler_47.dll` 拒绝访问），先 `Rename-Item` 改成 `Copilot.disabled_<日期>` 让它失效，重启后再删 |
+| **29 个商店应用** | 见下 | `Remove-AppxPackage` |
+
+商店应用卸载清单（实测 26 个成功，2 个系统级卸不掉属正常）：
+
+```powershell
+$names = @(
+  'Microsoft.BingWeather','Microsoft.MicrosoftSolitaireCollection','Microsoft.Microsoft3DViewer',
+  'Microsoft.MixedReality.Portal','Microsoft.SkypeApp','Microsoft.ZuneMusic','Microsoft.ZuneVideo',
+  'Microsoft.WindowsMaps','Microsoft.YourPhone','Microsoft.WindowsFeedbackHub','Microsoft.GetHelp',
+  'Microsoft.Getstarted','Microsoft.OutlookForWindows','microsoft.windowscommunicationsapps',
+  'Microsoft.XboxApp','Microsoft.XboxGamingOverlay','Microsoft.XboxGameOverlay',
+  'Microsoft.XboxSpeechToTextOverlay','Microsoft.WindowsAlarms','Microsoft.Wallet',
+  'Microsoft.MicrosoftPCManager','MicrosoftWindows.CrossDevice','Microsoft.People',
+  'Microsoft.Office.OneNote','Microsoft.MicrosoftStickyNotes'
+)
+foreach ($n in $names) {
+  $p = Get-AppxPackage -Name $n -ErrorAction SilentlyContinue
+  if ($p) { try { $p | Remove-AppxPackage -ErrorAction Stop; "OK $n" } catch { "FAIL $n" } }
+}
+```
+
+**卸不掉但无害的两个系统级应用**：`Microsoft.Windows.ParentalControls`、`Microsoft.Windows.NarratorQuickStart` —— 在 `C:\Windows\SystemApps` 下，报 `0x80073CFA`，属 Windows 自身组件，留着不影响。
+
+**绝对不能卸（会直接坏掉）：**
+
+| 组件 | 为什么 |
+|---|---|
+| **Visual C++ 2010/2012/2013/2015-2022 Redistributable**（六个） | python、torch、onnxruntime、chromadb 全依赖，卸了项目起不来 |
+| **NVIDIA 图形驱动程序** | 卸了桌面会回落到 800×600 |
+| **ELAN Touchpad** | 卸了触摸板失效 |
+| **Microsoft Edge / Update Health Tools / KB 更新** | 系统组件 |
+| **Microsoft.VCLibs / .NET.Native / UI.Xaml / WindowsAppRuntime**（Appx） | 商店应用与部分工具的运行库 |
+| **Microsoft.WindowsStore / DesktopAppInstaller / Winget.Source** | 卸了以后装软件很麻烦 |
+| **Shell 组件**（ShellExperienceHost / StartMenuExperienceHost / Search / LockApp 等） | 卸了桌面直接崩 |
+
+**保留但可以再议的**：`Vulkan Run Time Libraries`（某游戏带来的，约 10 MB，卸载器是 GUI，收益太小不值得动）、相机、照片、画图、截图、计算器、录音机（都是系统自带的小工具，服务器上偶尔还能用）。
