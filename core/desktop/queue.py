@@ -27,7 +27,10 @@ def _conn():
     所以直接 `with sqlite3.connect(...) as conn:` 每次调用都漏一个句柄
     （表现为 ResourceWarning: unclosed database）。这里补上 close 才算干净。
     """
-    os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
+    # 目录为空串时（配置未给 sandbox 路径）makedirs 会抛 WinError 3，先判空
+    db_dir = os.path.dirname(DB_PATH)
+    if db_dir:
+        os.makedirs(db_dir, exist_ok=True)
     conn = sqlite3.connect(DB_PATH)
     try:
         cur = conn.cursor()

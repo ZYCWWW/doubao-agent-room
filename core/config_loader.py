@@ -85,7 +85,10 @@ def load_config():
         if section in cfg:
             for key in keys:
                 if key in cfg[section]:
-                    cfg[section][key] = resolve_path(cfg[section][key])
+                    # 空值按示例配置的约定回退到项目内的默认目录；
+                    # 否则空串会一路传下去（例如 DB_PATH 变成 ".queue.db"，
+                    # os.path.dirname 得空串，makedirs('') 直接崩 WinError 3）
+                    cfg[section][key] = resolve_path(cfg[section][key]) or DEFAULT_CONFIG[section][key]
     return cfg
 
 
