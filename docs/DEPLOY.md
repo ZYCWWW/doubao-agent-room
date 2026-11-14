@@ -309,7 +309,7 @@ Register-ScheduledTask -TaskName 'agent_panel' `
 - [x] 真实推理：`react_loop("smoke-remote-01","1+1等于几？")` → 返回 `1+1等于2。`，沙盘节点创建成功
 - [x] 两个计划任务 `Running`，`LastTaskResult=267009`（= 正在运行，正常）
 - [x] 清理安装包回收 **1,798 MB**（OllamaSetup 1,772 + python-setup 25 + agent.zip 1）
-- [ ] **重启验证自启**：尚未执行——需要真的重启这台机器，是唯一没闭环的一条
+- [x] **重启验证自启（2026-11-14 17:31 实测通过）**：重启后 **16 秒**，两个 S4U 任务已 `Running`（`LastTaskResult=267009`），`ollama`（pid 4948）与 `streamlit`（pid 6840）均于 17:31:25 启动，8501 在 17:31:52 已可 TCP 连接；WinRM 慢一些，17:33:34 才起。**全程无人登录，面板与推理都自己活了。**
 
 ### 6.5 性能观察（重要）
 
