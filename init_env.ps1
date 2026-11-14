@@ -1,4 +1,4 @@
-# init_env.ps1 —— 一键初始化 Agent Room 运行环境
+﻿# init_env.ps1 —— 一键初始化 Agent Room 运行环境
 # 用法：powershell -ExecutionPolicy Bypass -File .\init_env.ps1
 # 说明：只做“装好”，不做“常驻”。常驻（计划任务）见 docs/DEPLOY.md 第 7 节。
 $ErrorActionPreference = "Stop"
