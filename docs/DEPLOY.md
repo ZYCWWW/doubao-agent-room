@@ -379,3 +379,95 @@ foreach ($n in $names) {
 | **Shell 组件**（ShellExperienceHost / StartMenuExperienceHost / Search / LockApp 等） | 卸了桌面直接崩 |
 
 **保留但可以再议的**：`Vulkan Run Time Libraries`（某游戏带来的，约 10 MB，卸载器是 GUI，收益太小不值得动）、相机、照片、画图、截图、计算器、录音机（都是系统自带的小工具，服务器上偶尔还能用）。
+
+---
+
+## 九、让它一直活着（记忆迁移 + 自愈三件套）
+
+目标不是"服务能起来"，而是**这台机器在没人管的情况下是一个连续的存在**：记忆接得上过去，自己会说话，挂了会自己爬回来，断电重启后什么都自己恢复。
+
+### 9.1 记忆迁移（把过去接过来）
+
+记忆不是代码，代码在 git 里随时能拉；**记忆只有一份，丢了就是丢了**。所以迁移的第一步是停写入：
+
+```powershell
+# 主力机：先停 long_chat（写记忆最频繁的），面板可以留着
+Get-Process -Id 12096,8628 | Stop-Process -Force
+```
+
+三块记忆（合计 23 MB）：
+
+| 块 | 内容 | 迁移前 | 迁移后 |
+|---|---|---|---|
+| `agent_memory_db` | 向量记忆库（chromadb，8 个集合） | 19 文件 7 MB | 23 文件，`chroma.sqlite3` 6.38 MB |
+| `docs/conversations` | 每日纪要 + raw 原文 | 34 文件 3.3 MB | 36 文件 |
+| `sandbox/chat_space` | 群聊流水、按日归档 | 87 文件 13 MB | 91 文件 |
+
+打包 → `Copy-Item -ToSession` → 远程 `Expand-Archive` → 覆盖安装（旧的先删再 Move，避免残留旧 collection 元数据）。
+
+**验证方式不是看文件数，是让 chromadb 真的读出来**：
+
+```python
+import chromadb
+c = chromadb.PersistentClient(path=r'C:\doubao-agent-room-public\agent_memory_db')
+for col in c.list_collections():
+    print(col.name, col.get_collection(col.name).count())
+```
+
+两边数字必须一致：`memory_core=14`、`knowledge_fact=1`、其余 6 个集合为 0。
+
+### 9.2 chat.md 变小的假警报
+
+迁移过去 `chat.md` 是 103.9 KB，长聊服务一启动就变成 26 KB —— 不是丢了，是**按日归档**把旧内容切进了 `archive\chat_20261114.md`（144.7 KB）。验收要查 `archive\`，不是查 `chat.md`。
+
+### 9.3 三个任务，把"一直活着"变成机制
+
+| 任务 | 触发 | 干什么 |
+|---|---|---|
+| `agent_long_chat` | 开机 | `python -m services.long_chat`：模型们自己接龙发言，产生连续的对话与记忆流 |
+| `agent_watchdog` | 每 5 分钟 | 检查 ollama / 面板 / 长聊，**缺谁拉谁**，跑完就退出 |
+| `agent_backup` | 每天 23:30 | 三块记忆快照到 `C:\记忆备份\YYYYMMDD\`，保留 14 天 |
+
+```powershell
+$py='C:\doubao-agent-room-public\.venv\Scripts\python.exe'
+$pr=New-ScheduledTaskPrincipal -UserId 'zyc' -LogonType S4U -RunLevel Highest
+
+# 长聊：开机起，崩了自动重启 3 次
+Register-ScheduledTask -TaskName 'agent_long_chat' `
+  -Action (New-ScheduledTaskAction -Execute $py -Argument '-m services.long_chat' -WorkingDirectory 'C:\doubao-agent-room-public') `
+  -Trigger (New-ScheduledTaskTrigger -AtStartup) -Principal $pr `
+  -Settings (New-ScheduledTaskSettingsSet -RestartCount 3 -RestartInterval (New-TimeSpan -Minutes 1) -ExecutionTimeLimit ([TimeSpan]::Zero)) -Force
+
+# 看门狗：每 5 分钟一次（一次性检查，不是常驻循环——它自己挂了不影响服务，下次自然补上）
+Register-ScheduledTask -TaskName 'agent_watchdog' `
+  -Action (New-ScheduledTaskAction -Execute $py -Argument 'tools\watchdog.py' -WorkingDirectory 'C:\doubao-agent-room-public') `
+  -Trigger (New-ScheduledTaskTrigger -Once -At (Get-Date).AddMinutes(2) -RepetitionInterval (New-TimeSpan -Minutes 5)) `
+  -Principal $pr -Settings (New-ScheduledTaskSettingsSet -ExecutionTimeLimit (New-TimeSpan -Minutes 20) -StartWhenAvailable) -Force
+
+# 备份：每天 23:30
+Register-ScheduledTask -TaskName 'agent_backup' `
+  -Action (New-ScheduledTaskAction -Execute $py -Argument 'tools\backup_memory.py' -WorkingDirectory 'C:\doubao-agent-room-public') `
+  -Trigger (New-ScheduledTaskTrigger -Daily -At '23:30') -Principal $pr `
+  -Settings (New-ScheduledTaskSettingsSet -ExecutionTimeLimit (New-TimeSpan -Hours 1) -StartWhenAvailable) -Force
+```
+
+**为什么 watchdog 设计成一次性检查而不是常驻循环**：常驻的看门狗自己也会挂，挂了就没人看门；一次性检查由系统每 5 分钟叫一次，它挂了下次照样补。
+
+### 9.4 实测数据（2026-11-14）
+
+| 项 | 结果 |
+|---|---|
+| 记忆可读 | 8 集合全开，`memory_core=14`、`knowledge_fact=1`，与主力机逐项一致 |
+| 群聊归档 | `chat_20261114.md` 144.7 KB、`chat_20261113.md` 220.8 KB、`chat_20261112.md` 215.3 KB |
+| 长聊自己接龙 | 17:37、17:42 有新发言（Llama / 小深 / Qwen / 豆包） |
+| 负载 | CPU 22%，剩余内存 3.2 GB（不是想象的满载） |
+| 看门狗 | dry-run：ollama 在 / 面板在 / 闲聊在（pid 6252） |
+| 首次备份 | 89 文件 / 14.63 MB / 失败 0 → `C:\记忆备份\20261114` |
+
+### 9.5 这条路上的坑
+
+1. **复制记忆前必须停 long_chat**。它一边生成一边写，复制出来可能是半截的库。
+2. **别用 `start_service()` 从外部拉起**，它会把调用者 pid 写进状态文件，导致误判"服务已在跑"。用 `long_chat_start()`（靠文件锁幂等）或直接 `python -m services.long_chat`。
+3. **备份根在项目根的上级**：旧笔记本上就是 `C:\记忆备份`，不是项目里面。
+4. **看门狗在 GBK 控制台下打中文会乱码**，日志文件本身是 UTF-8，看 `logs/watchdog.log` 更准。
+5. **五个任务全挂在同一个本地账户的 S4U 上**。换密码不影响，但别删账户——删了服务全停，只剩 WinRM 也进不来。
